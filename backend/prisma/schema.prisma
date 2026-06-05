@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id        String     @id @default(uuid())
+  email     String     @unique
+  password  String
+  name      String
+  role      String
+  centerId  String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  alerts    Alert[]
+  logs      AuditLog[]
+  center    Center?    @relation(fields: [centerId], references: [id])
+}
+
+model Center {
+  id          String       @id @default(uuid())
+  name        String       @unique
+  code        String       @unique
+  location    String
+  assignments Assignment[]
+  users       User[]
+}
+
+model Exam {
+  id        String   @id @default(uuid())
+  name      String
+  date      DateTime
+  startTime DateTime
+  endTime   DateTime
+  createdAt DateTime @default(now())
+  papers    Paper?
+}
+
+model Paper {
+  id               String       @id @default(uuid())
+  examId           String       @unique
+  originalFileName String
+  encryptedPath    String
+  hash             String
+  aesIv            String
+  aesTag           String
+  uploadedBy       String
+  createdAt        DateTime     @default(now())
+  assignments      Assignment[]
+  exam             Exam         @relation(fields: [examId], references: [id], onDelete: Cascade)
+}
+
+model Assignment {
+  id        String   @id @default(uuid())
+  paperId   String
+  centerId  String
+  createdAt DateTime @default(now())
+  center    Center   @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  paper     Paper    @relation(fields: [paperId], references: [id], onDelete: Cascade)
+
+  @@unique([paperId, centerId])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  action    String
+  ipAddress String?
+  userAgent String?
+  details   String?
+  timestamp DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id])
+}
+
+model Alert {
+  id        String   @id @default(uuid())
+  type      String
+  userId    String?
+  message   String
+  resolved  Boolean  @default(false)
+  timestamp DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id])
+}
